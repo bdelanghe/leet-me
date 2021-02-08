@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 """Leet code problem chooser"""
 
-import requests
-import click
 from enum import Enum
-from typing import List, Tuple
-from random import sample, choice, choices
+from random import choice, sample
+from typing import List, Dict, Any
+
+import click
+import requests
 
 
 class Level(Enum):
@@ -18,29 +19,29 @@ class Level(Enum):
 class LeetProblems:
     """Leet code class interface"""
 
-    def __init__(self, paid=False) -> None:
+    def __init__(self, paid: bool = False) -> None:
         url: str = 'https://leetcode.com/api/problems/all/'
         self.request: requests.Response = requests.get(url)
-        self.problems: List[dict] = self.request.json()['stat_status_pairs']
-        clean_dict: dict = dict(zip(
-                                    [i for i in range(1, 4)],
-                                    [[] for _ in range(1, 4)]))
+        self.problems: List[Dict[str, Any]] = self.request.json()['stat_status_pairs']
+        clean_dict: Dict[int, List[Dict[str, Any]]] = dict(zip(
+            [i for i in range(1, 4)],
+            [[] for _ in range(1, 4)]))
         for problem in self.problems:
             if paid is False and problem['paid_only'] is True:
                 pass
             else:
                 clean_dict[problem['difficulty']['level']].append({
-                        'question_title': problem['stat']['question__title'],
-                        'question_title_slug': problem['stat']['question__title_slug'],
-                        'question_url': f"https://leetcode.com/problems/{problem['stat']['question__title_slug']}",
-                        'question_id': problem['stat']['frontend_question_id'],
-                        'paid_only': problem['paid_only']
+                    'question_title': problem['stat']['question__title'],
+                    'question_title_slug': problem['stat']['question__title_slug'],
+                    'question_url': f"https://leetcode.com/problems/{problem['stat']['question__title_slug']}",
+                    'question_id': problem['stat']['frontend_question_id'],
+                    'paid_only': problem['paid_only']
 
                 })
 
         self.data = clean_dict
 
-    def get_items(self, level: int, num: int) -> List[dict]:
+    def get_items(self, level: int, num: int) -> List[Dict[str, Any]]:
         """get multiple items"""
         return sample(self[level], k=num)
 
@@ -52,10 +53,10 @@ class LeetProblems:
                f'Medium: {len(self[2])}\n' + \
                f'Hard: {len(self[3])}'
 
-    def __getitem__(self, item) -> dict:
+    def __getitem__(self, item: int) -> List[Dict[str, Any]]:
         return self.data[item]
 
-    def __delitem__(self, key) -> None:
+    def __delitem__(self, key: int) -> None:
         del self[key]
 
     def __len__(self) -> int:
@@ -65,14 +66,14 @@ class LeetProblems:
 @click.command()
 @click.option('--num', prompt='How many problems',
               help='The total number of problems')
-@click.option('--easy',default=0, help='number of easy problems')
+@click.option('--easy', default=0, help='number of easy problems')
 @click.option('--medium', default=0, help='number of medium problems')
-@click.option('--hard', default=0,  help='number of hard problems')
+@click.option('--hard', default=0, help='number of hard problems')
 @click.option('--paid', default=False, help='Do you want paid challenges?')
 def get_problems(num: int, paid: bool, easy: int = 0, medium: int = 0, hard: int = 0) -> None:
     """Display a leet code problem"""
     leet_problems = LeetProblems(paid)
-    levels: dict = {
+    levels: Dict[str, Dict[str, int]] = {
         'easy': {
             'count': easy,
             'number': 1
@@ -87,7 +88,7 @@ def get_problems(num: int, paid: bool, easy: int = 0, medium: int = 0, hard: int
         }
     }
     num_rem: int = int(num)
-    chosen_problems: dict = dict(zip('easy medium hard'.split(), [[] for _ in range(3)]))
+    chosen_problems: Dict[str, List[Dict[str, Any]]] = dict(zip('easy medium hard'.split(), [[] for _ in range(3)]))
     for k, v in list(levels.items()):
         if v['count'] > 0:
             chosen_problems[k] = leet_problems.get_items(v['number'], v['count'])
